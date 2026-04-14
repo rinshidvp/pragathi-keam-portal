@@ -1,26 +1,33 @@
 
 
-## Problem: 404 on Vercel Deployment
+## System Check Results
 
-This project uses **TanStack Start with SSR** (server-side rendering), not a plain static React SPA. The current `vercel.json` tries to serve everything from `index.html`, but TanStack Start needs a server runtime to handle SSR, routing, and server functions.
+### What's Working
+- **Homepage**: All 6 sections render correctly — Hero, Live KEAM Alerts, Cut-Off Predictor, KEAM Prep Resources, Direct Mentorship & Help Desk, Footer
+- **Database connection**: Supabase queries work — empty states display correctly for alerts, resources, and contacts
+- **Styling**: Sunset gradient theme, layout, and responsive design all intact
+- **Admin page code**: Login form and dashboard logic are correctly structured
+- **No JavaScript errors** in the console
 
-**Vercel cannot host this app with a simple static rewrite.** The build toolchain (`@lovable.dev/vite-tanstack-config`) targets a Cloudflare Worker runtime for SSR, which is incompatible with Vercel's serverless functions.
+### Issues Found
 
-### Your Options
+**1. Broken `@font-face` declaration (causes repeated console warnings)**
+In `src/styles.css` (lines 55-61), the `@font-face` block uses a Google Fonts *CSS stylesheet URL* as the font `src`. Browsers expect a direct `.woff2` font file URL, so they try to parse the CSS response as a font and fail with "invalid sfntVersion."
 
-**Option A: Use Lovable's built-in hosting (Recommended)**
-- Click **Publish** in the Lovable editor (top-right). Your app is already configured to deploy correctly on Lovable's hosting infrastructure.
-- Your published URL is: `https://pragathi-keam-portal.lovable.app`
-- You can connect a custom domain from **Project Settings → Domains** after publishing.
+The font still renders because `__root.tsx` correctly loads it via `<link rel="stylesheet">`, so the `@font-face` block is redundant and harmful.
 
-**Option B: Self-host on Cloudflare Pages**
-- The build output is designed for Cloudflare Workers. You could deploy to Cloudflare Pages with the Workers runtime, but this requires manual setup outside Lovable.
-- See: https://docs.lovable.dev/tips-tricks/self-hosting
+**Fix**: Remove the broken `@font-face` block entirely from `styles.css`. The Google Fonts stylesheet link in `__root.tsx` already handles font loading correctly.
 
-### What I Will Do
+**2. Missing favicon (minor)**
+`/favicon.ico` returns a 404. Not critical but shows an error in network logs.
 
-Remove the `vercel.json` file since it serves no purpose for this project and may cause confusion. The app should be published via Lovable's built-in publish flow instead.
+**Fix**: Add a simple favicon or suppress the request.
 
 ### Changes
-- **Delete `vercel.json`** — this file is not used by Lovable hosting and incorrectly suggests static SPA hosting.
+| File | Action |
+|------|--------|
+| `src/styles.css` | Remove broken `@font-face` block (lines 55-61) |
+| `public/favicon.ico` | Optionally add a favicon file |
+
+No database, auth, or component logic changes needed — the app is functioning correctly.
 
