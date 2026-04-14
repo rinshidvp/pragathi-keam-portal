@@ -1,84 +1,26 @@
 
 
-## Plan: Refactor Portal to KEAM Aspirant Help Desk
+## Problem: 404 on Vercel Deployment
 
-Restructure the public-facing portal from a general college union site to a focused "KEAM Aspirant Help Desk" while keeping the existing sunset theme, Supabase backend, and admin CRUD intact.
+This project uses **TanStack Start with SSR** (server-side rendering), not a plain static React SPA. The current `vercel.json` tries to serve everything from `index.html`, but TanStack Start needs a server runtime to handle SSR, routing, and server functions.
 
-### Database Change
+**Vercel cannot host this app with a simple static rewrite.** The build toolchain (`@lovable.dev/vite-tanstack-config`) targets a Cloudflare Worker runtime for SSR, which is incompatible with Vercel's serverless functions.
 
-**New table: `cutoff_ranks`** — to power the TKMCE Cut-Off Predictor section.
+### Your Options
 
-```sql
-CREATE TABLE public.cutoff_ranks (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  branch text NOT NULL,
-  year integer NOT NULL,
-  general_rank integer,
-  obc_rank integer,
-  sc_rank integer,
-  st_rank integer,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
--- Public read, admin write (same pattern as other tables)
-```
+**Option A: Use Lovable's built-in hosting (Recommended)**
+- Click **Publish** in the Lovable editor (top-right). Your app is already configured to deploy correctly on Lovable's hosting infrastructure.
+- Your published URL is: `https://pragathi-keam-portal.lovable.app`
+- You can connect a custom domain from **Project Settings → Domains** after publishing.
 
-### File Changes
+**Option B: Self-host on Cloudflare Pages**
+- The build output is designed for Cloudflare Workers. You could deploy to Cloudflare Pages with the Workers runtime, but this requires manual setup outside Lovable.
+- See: https://docs.lovable.dev/tips-tricks/self-hosting
 
-#### 1. `src/components/HeroSection.tsx` — New headline and CTAs
-- Headline: "Your Gateway to TKMCE: Official KEAM Help Desk 2026."
-- Sub-headline: "Run by Pragathi College Union. For the Students, By the Students."
-- CTAs: "Access Mock Tests" (links to #resources) and "Join Aspirant Community" (links to WhatsApp/external)
+### What I Will Do
 
-#### 2. `src/components/EventsSection.tsx` → Rename to "Live KEAM Alerts"
-- Change heading to "Live KEAM Alerts"
-- Subtitle: "Stay updated with KEAM notifications, deadlines & important dates"
-- Add a pulsing "LIVE" badge for visual urgency
-- Add alert-style icons (Bell/AlertTriangle) instead of Calendar for upcoming deadlines
+Remove the `vercel.json` file since it serves no purpose for this project and may cause confusion. The app should be published via Lovable's built-in publish flow instead.
 
-#### 3. New `src/components/CutoffSection.tsx` — TKMCE Cut-Off Predictor
-- Static/dynamic table showing previous year cut-off ranks by branch (CS, EC, ME, CE, EEE, etc.)
-- Fetches from new `cutoff_ranks` table; falls back to hardcoded sample data if empty
-- Clean table with branch rows and rank columns (General, OBC, SC, ST)
-
-#### 4. `src/components/AcademicSection.tsx` — KEAM-focused redesign
-- Heading: "KEAM Prep Resources"
-- Group by KEAM subjects: Physics, Chemistry, Mathematics
-- Display as visually distinct cards in 4 categories: "Subject-wise PYQs", "High-Yield Topics", "Formula Sheets", "Mock Tests"
-- Each card shows an icon and count of available resources
-
-#### 5. `src/components/ContactsSection.tsx` — Help Desk Directory
-- Title: "Direct Mentorship & Help Desk"
-- Two-tier layout: "Union Leaders" at top (larger cards) and "Help Desk Volunteers" below (smaller grid)
-- Distinguish tiers by role field (e.g., roles containing "Chairman", "Vice", "Leader" go to top tier)
-- Keep prominent Call and WhatsApp buttons
-
-#### 6. `src/components/Header.tsx` — Update branding
-- Change center text from "Pragathi 2026 / College Union" to "KEAM Help Desk 2026 / Pragathi College Union"
-
-#### 7. `src/components/Footer.tsx` — Minor text update
-- Update tagline to reference KEAM Help Desk
-
-#### 8. `src/routes/index.tsx` — Update meta and add CutoffSection
-- Update page title/meta to "KEAM Help Desk 2026 — Pragathi College Union"
-- Add `<CutoffSection />` between EventsSection and AcademicSection
-
-#### 9. Admin Dashboard Updates
-- `src/components/admin/AdminDashboard.tsx` — Rename tab labels: "Events" → "KEAM Alerts", "Resources" → "KEAM Resources"
-- `src/components/admin/ManageEvents.tsx` — Update heading to "Manage KEAM Alerts/Notifications"
-- `src/components/admin/ManageResources.tsx` — Update subject dropdown to default KEAM subjects (Physics, Chemistry, Mathematics); add resource types "Formula Sheet", "High-Yield Topics"
-- New `src/components/admin/ManageCutoffs.tsx` — CRUD for cutoff rank data; add as a new tab in the admin sidebar
-
-### Section Order on Homepage
-1. Header
-2. Hero (KEAM Help Desk)
-3. Live KEAM Alerts
-4. TKMCE Cut-Off Predictor
-5. KEAM Prep Resources
-6. Direct Mentorship & Help Desk
-7. Footer
-
-### Technical Notes
-- No changes to the sunset theme CSS, Supabase client, or auth flow
-- The `cutoff_ranks` table gets the same RLS pattern: public SELECT, admin-only INSERT/UPDATE/DELETE
-- All existing Supabase queries remain; only labels and UI layout change
+### Changes
+- **Delete `vercel.json`** — this file is not used by Lovable hosting and incorrectly suggests static SPA hosting.
 
