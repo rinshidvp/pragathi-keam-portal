@@ -38,7 +38,7 @@ export default function CosmIQBadge() {
         className={`
           flex items-center overflow-hidden
           transition-all duration-500 ease-out
-          ${isHovered ? "max-w-[200px] opacity-100" : "max-w-[60px] opacity-90"}
+          ${isHovered ? "max-w-[200px] opacity-100" : "max-w-[140px] opacity-90"}
         `}
       >
         <span className="text-xs font-medium whitespace-nowrap text-white/90">
