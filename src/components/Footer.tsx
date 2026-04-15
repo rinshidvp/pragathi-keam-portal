@@ -47,6 +47,29 @@ export default function Footer() {
           <p className="text-xs text-background/40">
             © {new Date().getFullYear()} Pragathi College Union. All rights reserved.
           </p>
+
+          {/* CosmIQ Signature */}
+          <div className="flex flex-col items-center gap-1 pt-2 border-t border-background/10 w-full max-w-sm">
+            <a
+              href="https://www.cosmiqproject.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-2 text-xs text-background/50 hover:text-background/70 transition-colors"
+            >
+              <img
+                src="/images/cosmiq-logo-white.png"
+                alt=""
+                className="w-5 h-5 object-contain opacity-70 group-hover:opacity-100 transition-opacity"
+              />
+              <span>
+                Designed & Developed by{" "}
+                <span className="font-semibold text-amber-400/80 group-hover:text-amber-300 transition-colors">
+                  CosmIQ
+                </span>
+                {" "}| Innovative Software Solutions
+              </span>
+            </a>
+          </div>
         </div>
       </div>
     </footer>

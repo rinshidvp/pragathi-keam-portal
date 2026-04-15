@@ -6,6 +6,7 @@ import CutoffSection from "@/components/CutoffSection";
 import AcademicSection from "@/components/AcademicSection";
 import ContactsSection from "@/components/ContactsSection";
 import Footer from "@/components/Footer";
+import CosmIQBadge from "@/components/CosmIQBadge";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -29,6 +30,7 @@ function Index() {
       <AcademicSection />
       <ContactsSection />
       <Footer />
+      <CosmIQBadge />
     </div>
   );
 }
