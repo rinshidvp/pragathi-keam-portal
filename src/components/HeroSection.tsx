@@ -10,6 +10,24 @@ export default function HeroSection() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-sunset-orange rounded-full blur-3xl" />
       </div>
 
+      {/* TKMCE Emblem Watermark */}
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vh] h-[70vh] pointer-events-none"
+        style={{
+          opacity: 0.12,
+          filter: "blur(3px)",
+          mixBlendMode: "luminosity",
+          zIndex: 0,
+        }}
+      >
+        <img
+          src="/images/tkmce-emblem.png"
+          alt=""
+          aria-hidden="true"
+          className="w-full h-full object-contain rounded-full"
+        />
+      </div>
+
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
