@@ -12,7 +12,7 @@ export default function HeroSection() {
 
       {/* TKMCE Emblem Watermark */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vh] h-[70vh] pointer-events-none"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[45vh] h-[45vh] pointer-events-none"
         style={{
           opacity: 0.12,
           filter: "blur(3px)",
@@ -24,7 +24,7 @@ export default function HeroSection() {
           src="/images/tkmce-emblem.png"
           alt=""
           aria-hidden="true"
-          className="w-full h-full object-contain rounded-full"
+          className="w-full h-full object-contain"
         />
       </div>
 
