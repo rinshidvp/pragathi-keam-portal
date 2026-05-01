@@ -41,6 +41,87 @@ export type Database = {
         }
         Relationships: []
       }
+      answer_keys: {
+        Row: {
+          created_at: string
+          file_url: string
+          id: string
+          paper_name: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          file_url: string
+          id?: string
+          paper_name: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          file_url?: string
+          id?: string
+          paper_name?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      college_departments: {
+        Row: {
+          college_id: string
+          created_at: string
+          department_id: string
+          id: string
+        }
+        Insert: {
+          college_id: string
+          created_at?: string
+          department_id: string
+          id?: string
+        }
+        Update: {
+          college_id?: string
+          created_at?: string
+          department_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "college_departments_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "college_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      colleges: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           created_at: string
@@ -98,6 +179,59 @@ export type Database = {
           sc_rank?: number | null
           st_rank?: number | null
           year?: number
+        }
+        Relationships: []
+      }
+      cutoffs: {
+        Row: {
+          category: Database["public"]["Enums"]["cutoff_category"]
+          college_department_id: string
+          created_at: string
+          id: string
+          rank: number | null
+          year: number
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["cutoff_category"]
+          college_department_id: string
+          created_at?: string
+          id?: string
+          rank?: number | null
+          year?: number
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["cutoff_category"]
+          college_department_id?: string
+          created_at?: string
+          id?: string
+          rank?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cutoffs_college_department_id_fkey"
+            columns: ["college_department_id"]
+            isOneToOne: false
+            referencedRelation: "college_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -188,6 +322,16 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      cutoff_category:
+        | "SM"
+        | "EZ"
+        | "MU"
+        | "BH"
+        | "LA"
+        | "BX"
+        | "KU"
+        | "SC"
+        | "ST"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -316,6 +460,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      cutoff_category: ["SM", "EZ", "MU", "BH", "LA", "BX", "KU", "SC", "ST"],
     },
   },
 } as const

@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
+import AnswerKeysSection from "@/components/AnswerKeysSection";
 import EventsSection from "@/components/EventsSection";
-import CutoffSection from "@/components/CutoffSection";
+import CutoffPredictor from "@/components/CutoffPredictor";
 import AcademicSection from "@/components/AcademicSection";
 import ContactsSection from "@/components/ContactsSection";
 import Footer from "@/components/Footer";
@@ -25,8 +26,9 @@ function Index() {
     <div className="min-h-screen">
       <Header />
       <HeroSection />
+      <AnswerKeysSection />
       <EventsSection />
-      <CutoffSection />
+      <CutoffPredictor />
       <AcademicSection />
       <ContactsSection />
       <Footer />

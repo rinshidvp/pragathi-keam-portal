@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Users, BookOpen, Link2, TrendingUp, LogOut } from "lucide-react";
+import { Bell, Users, BookOpen, Link2, TrendingUp, LogOut, FileCheck } from "lucide-react";
 import ManageEvents from "./ManageEvents";
 import ManageContacts from "./ManageContacts";
 import ManageResources from "./ManageResources";
 import ManageSocials from "./ManageSocials";
-import ManageCutoffs from "./ManageCutoffs";
+import ManageCutoffsV2 from "./ManageCutoffsV2";
+import ManageAnswerKeys from "./ManageAnswerKeys";
 
 const tabs = [
   { key: "events", label: "KEAM Alerts", icon: Bell },
-  { key: "cutoffs", label: "Cut-Off Ranks", icon: TrendingUp },
+  { key: "cutoffs", label: "Cutoffs", icon: TrendingUp },
+  { key: "answer_keys", label: "Answer Keys", icon: FileCheck },
   { key: "resources", label: "KEAM Resources", icon: BookOpen },
   { key: "contacts", label: "Contacts", icon: Users },
   { key: "socials", label: "Socials", icon: Link2 },
@@ -61,7 +63,8 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
       <main className="flex-1 p-4 sm:p-8 overflow-auto">
         {active === "events" && <ManageEvents />}
-        {active === "cutoffs" && <ManageCutoffs />}
+        {active === "cutoffs" && <ManageCutoffsV2 />}
+        {active === "answer_keys" && <ManageAnswerKeys />}
         {active === "resources" && <ManageResources />}
         {active === "contacts" && <ManageContacts />}
         {active === "socials" && <ManageSocials />}
