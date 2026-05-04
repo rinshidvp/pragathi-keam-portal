@@ -268,6 +268,9 @@ export default function ManageCutoffsV2() {
                 <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={() => setAddCollegeOpen(true)} title="Add college">
                   <Plus className="w-4 h-4" />
                 </Button>
+                <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 text-destructive hover:text-destructive" onClick={handleDeleteCollege} disabled={!collegeId} title="Delete selected college">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
 
@@ -302,6 +305,9 @@ export default function ManageCutoffsV2() {
                 <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={() => setAddDeptOpen(true)} title="Add department">
                   <Plus className="w-4 h-4" />
                 </Button>
+                <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 text-destructive hover:text-destructive" onClick={handleDeleteDept} disabled={!deptId} title="Delete selected department">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -333,7 +339,10 @@ export default function ManageCutoffsV2() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={handleClearYear} disabled={!collegeId || !deptId} className="h-11 text-destructive hover:text-destructive">
+              <Trash2 className="w-4 h-4 mr-2" /> Clear Year
+            </Button>
             <Button onClick={handleSave} disabled={saving || !collegeId || !deptId} className="bg-gradient-sunset text-primary-foreground font-semibold h-11 px-6">
               <Save className="w-4 h-4 mr-2" />
               {saving ? "Saving..." : "Save Cutoffs"}
