@@ -69,9 +69,20 @@ export default function ManageAnswerKeys() {
     fetchItems();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this answer key?")) return;
-    await supabase.from("answer_keys").delete().eq("id", id);
+  const handleDelete = async (item: AnswerKey) => {
+    if (!confirm("Are you sure you want to delete this answer key? The PDF file will also be removed.")) return;
+    // Try to extract storage path from the public URL and delete the file
+    try {
+      const marker = "/answer-keys/";
+      const idx = item.file_url.indexOf(marker);
+      if (idx !== -1) {
+        const path = item.file_url.substring(idx + marker.length).split("?")[0];
+        if (path) await supabase.storage.from("answer-keys").remove([path]);
+      }
+    } catch { /* ignore storage errors */ }
+    const { error } = await supabase.from("answer_keys").delete().eq("id", item.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Answer key deleted");
     fetchItems();
   };
 
@@ -162,7 +173,7 @@ export default function ManageAnswerKeys() {
                     </a>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => handleDelete(item.id)} className="text-destructive hover:text-destructive/80">
+                    <button onClick={() => handleDelete(item)} className="text-destructive hover:text-destructive/80" title="Delete">
                       <Trash2 className="w-4 h-4 inline" />
                     </button>
                   </td>

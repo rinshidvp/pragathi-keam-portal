@@ -4,7 +4,6 @@ import HeroSection from "@/components/HeroSection";
 import AnswerKeysSection from "@/components/AnswerKeysSection";
 import EventsSection from "@/components/EventsSection";
 import CutoffPredictor from "@/components/CutoffPredictor";
-import AcademicSection from "@/components/AcademicSection";
 import ContactsSection from "@/components/ContactsSection";
 import Footer from "@/components/Footer";
 import CosmIQBadge from "@/components/CosmIQBadge";
@@ -26,10 +25,9 @@ function Index() {
     <div className="min-h-screen">
       <Header />
       <HeroSection />
-      <AnswerKeysSection />
       <EventsSection />
       <CutoffPredictor />
-      <AcademicSection />
+      <AnswerKeysSection />
       <ContactsSection />
       <Footer />
       <CosmIQBadge />
