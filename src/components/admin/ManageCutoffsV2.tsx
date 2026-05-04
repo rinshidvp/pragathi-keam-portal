@@ -173,6 +173,54 @@ export default function ManageCutoffsV2() {
     }
   };
 
+  const handleDeleteCollege = async () => {
+    if (!collegeId) return;
+    if (!confirm(`Delete college "${selectedCollege?.name}" and ALL its cutoff data? This cannot be undone.`)) return;
+    const { data: cds } = await supabase.from("college_departments").select("id").eq("college_id", collegeId);
+    const cdIds = (cds ?? []).map((r) => r.id);
+    if (cdIds.length) {
+      await supabase.from("cutoffs").delete().in("college_department_id", cdIds);
+      await supabase.from("college_departments").delete().eq("college_id", collegeId);
+    }
+    const { error } = await supabase.from("colleges").delete().eq("id", collegeId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("College deleted");
+    setColleges((p) => p.filter((c) => c.id !== collegeId));
+    setCollegeId(null);
+  };
+
+  const handleDeleteDept = async () => {
+    if (!deptId) return;
+    if (!confirm(`Delete department "${selectedDept?.name}" and ALL its cutoff data across colleges? This cannot be undone.`)) return;
+    const { data: cds } = await supabase.from("college_departments").select("id").eq("department_id", deptId);
+    const cdIds = (cds ?? []).map((r) => r.id);
+    if (cdIds.length) {
+      await supabase.from("cutoffs").delete().in("college_department_id", cdIds);
+      await supabase.from("college_departments").delete().eq("department_id", deptId);
+    }
+    const { error } = await supabase.from("departments").delete().eq("id", deptId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Department deleted");
+    setDepartments((p) => p.filter((d) => d.id !== deptId));
+    setDeptId(null);
+  };
+
+  const handleClearYear = async () => {
+    if (!collegeId || !deptId || !yearNum) return;
+    if (!confirm(`Clear all ${yearNum} cutoffs for this college + branch?`)) return;
+    const { data: cd } = await supabase
+      .from("college_departments")
+      .select("id")
+      .eq("college_id", collegeId)
+      .eq("department_id", deptId)
+      .maybeSingle();
+    if (!cd) return;
+    const { error } = await supabase.from("cutoffs").delete().eq("college_department_id", cd.id).eq("year", yearNum);
+    if (error) { toast.error(error.message); return; }
+    setRanks(Object.fromEntries(CATEGORIES.map((c) => [c, ""])) as Record<Category, string>);
+    toast.success("Cutoffs cleared");
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
