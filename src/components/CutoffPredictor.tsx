@@ -329,3 +329,59 @@ export default function CutoffPredictor() {
     </section>
   );
 }
+
+interface SearchableComboboxProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  allLabel: string;
+  placeholder: string;
+  emptyText: string;
+}
+
+function SearchableCombobox({ value, onChange, options, allLabel, placeholder, emptyText }: SearchableComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const display = value === "__all__" ? allLabel : value;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-12 w-full justify-between text-base bg-background/70 border-2 font-normal"
+        >
+          <span className={cn("truncate", value === "__all__" && "text-muted-foreground")}>{display}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={placeholder} className="h-10" />
+          <CommandList>
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value={allLabel}
+                onSelect={() => { onChange("__all__"); setOpen(false); }}
+              >
+                <Check className={cn("mr-2 h-4 w-4", value === "__all__" ? "opacity-100" : "opacity-0")} />
+                {allLabel}
+              </CommandItem>
+              {options.map((opt) => (
+                <CommandItem
+                  key={opt}
+                  value={opt}
+                  onSelect={() => { onChange(opt); setOpen(false); }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === opt ? "opacity-100" : "opacity-0")} />
+                  {opt}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
