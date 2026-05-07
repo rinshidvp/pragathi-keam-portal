@@ -189,36 +189,30 @@ export default function CutoffPredictor() {
 
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Filter by College
+                Search College
               </Label>
-              <Select value={collegeFilter} onValueChange={setCollegeFilter}>
-                <SelectTrigger className="h-12 text-base bg-background/70 border-2">
-                  <SelectValue placeholder="All colleges" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All colleges</SelectItem>
-                  {colleges.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                value={collegeFilter}
+                onChange={setCollegeFilter}
+                options={colleges}
+                allLabel="All colleges"
+                placeholder="Search college..."
+                emptyText="No college found."
+              />
             </div>
 
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Filter by Branch
+                Search Branch
               </Label>
-              <Select value={branchFilter} onValueChange={setBranchFilter}>
-                <SelectTrigger className="h-12 text-base bg-background/70 border-2">
-                  <SelectValue placeholder="All branches" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All branches</SelectItem>
-                  {branches.map((b) => (
-                    <SelectItem key={b} value={b}>{b}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                value={branchFilter}
+                onChange={setBranchFilter}
+                options={branches}
+                allLabel="All branches"
+                placeholder="Search branch..."
+                emptyText="No branch found."
+              />
             </div>
           </div>
 
