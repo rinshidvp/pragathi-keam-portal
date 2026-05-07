@@ -184,38 +184,33 @@ export type Database = {
       }
       cutoffs: {
         Row: {
-          category: Database["public"]["Enums"]["cutoff_category"]
-          college_department_id: string
+          category: string
+          college_name: string
           created_at: string
+          cutoff_rank: number
+          department_name: string
           id: string
-          rank: number | null
-          year: number
+          phase: string
         }
         Insert: {
-          category: Database["public"]["Enums"]["cutoff_category"]
-          college_department_id: string
+          category: string
+          college_name: string
           created_at?: string
+          cutoff_rank: number
+          department_name: string
           id?: string
-          rank?: number | null
-          year?: number
+          phase: string
         }
         Update: {
-          category?: Database["public"]["Enums"]["cutoff_category"]
-          college_department_id?: string
+          category?: string
+          college_name?: string
           created_at?: string
+          cutoff_rank?: number
+          department_name?: string
           id?: string
-          rank?: number | null
-          year?: number
+          phase?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "cutoffs_college_department_id_fkey"
-            columns: ["college_department_id"]
-            isOneToOne: false
-            referencedRelation: "college_departments"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       departments: {
         Row: {
