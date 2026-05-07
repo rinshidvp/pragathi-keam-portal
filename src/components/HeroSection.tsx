@@ -70,7 +70,9 @@ export default function HeroSection() {
             View Official Answer Keys
           </a>
           <a
-            href="#contacts"
+            href="https://chat.whatsapp.com/LgS3mArpioeAhQQa8C5462"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-full border-2 border-border text-foreground font-bold text-base hover:bg-accent transition-colors"
           >
             <Users className="w-4 h-4" />
