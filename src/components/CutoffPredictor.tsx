@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { GraduationCap, Loader2, Search, Sparkles, Target, Trophy } from "lucide-react";
+import { Check, ChevronsUpDown, GraduationCap, Loader2, Search, Sparkles, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Select,
   SelectContent,
@@ -12,6 +15,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const KEAM_BRANCHES = [
+  "Electronics and communication",
+  "Electrical and electronics",
+  "Electrical and Computer engineering",
+  "Mechanical engineering",
+  "Computer Science & Engineering (Artificial Intelligence)",
+  "Civil and Environmental Engineering",
+  "Dairy Technology",
+  "Food Technology",
+  "Instrumentation & Control Engg.",
+  "Industrial Engineering",
+  "Information Technology",
+  "Production Engineering",
+  "Robotics and Artificial Intelligence",
+  "Artificial Intelligence and Data Science",
+  "Bio Technology and Biochemical Engineering",
+  "Computer Science and Engineering (Artificial Intelligence and Machine Learning)",
+  "Computer Science and Business Systems",
+  "Computer Science and Engineering (Cyber Security)",
+  "Electronics & Biomedical Engg",
+  "Electronics and Computer Science",
+  "Electronics Engineering (VLSI Design & Technology)",
+  "Mechanical (Automobile)",
+  "Polymer Engg.",
+  "Printing Technology",
+  "Artificial Intelligence",
+  "B.Tech Agricultural Engineering",
+  "Aeronautical Engineering",
+  "Automobile Engineering",
+  "Computer Science & Engineering and Business Systems",
+  "Bio Medical Engineering",
+  "Biomedical & Robotic Engineering",
+  "Bio Technology",
+  "Electronics & Instrumentation",
+  "Safety & Fire Engineering",
+  "Computer Science & Engineering (Internet of Things & Cyber Security including Block Chain)",
+  "Computer Science and Engineering (Artificial Intelligence and Data Science)",
+  "Internet of Things",
+  "Metallurgical and Materials Engineering",
+  "Mechatronics Engineering",
+  "Robotics and Automation Engineering",
+  "Naval Arch. & Ship Building Engineering",
+];
 
 const CATEGORIES = ["SM", "EZ", "MU", "BH", "LA", "BX", "KU", "SC", "ST", "EW"] as const;
 
