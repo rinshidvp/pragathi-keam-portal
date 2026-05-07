@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { GraduationCap, Loader2, Search, Sparkles, Target, Trophy } from "lucide-react";
+import { Check, ChevronsUpDown, GraduationCap, Loader2, Search, Sparkles, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Select,
   SelectContent,
@@ -12,6 +15,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const KEAM_BRANCHES = [
+  "Electronics and communication",
+  "Electrical and electronics",
+  "Electrical and Computer engineering",
+  "Mechanical engineering",
+  "Computer Science & Engineering (Artificial Intelligence)",
+  "Civil and Environmental Engineering",
+  "Dairy Technology",
+  "Food Technology",
+  "Instrumentation & Control Engg.",
+  "Industrial Engineering",
+  "Information Technology",
+  "Production Engineering",
+  "Robotics and Artificial Intelligence",
+  "Artificial Intelligence and Data Science",
+  "Bio Technology and Biochemical Engineering",
+  "Computer Science and Engineering (Artificial Intelligence and Machine Learning)",
+  "Computer Science and Business Systems",
+  "Computer Science and Engineering (Cyber Security)",
+  "Electronics & Biomedical Engg",
+  "Electronics and Computer Science",
+  "Electronics Engineering (VLSI Design & Technology)",
+  "Mechanical (Automobile)",
+  "Polymer Engg.",
+  "Printing Technology",
+  "Artificial Intelligence",
+  "B.Tech Agricultural Engineering",
+  "Aeronautical Engineering",
+  "Automobile Engineering",
+  "Computer Science & Engineering and Business Systems",
+  "Bio Medical Engineering",
+  "Biomedical & Robotic Engineering",
+  "Bio Technology",
+  "Electronics & Instrumentation",
+  "Safety & Fire Engineering",
+  "Computer Science & Engineering (Internet of Things & Cyber Security including Block Chain)",
+  "Computer Science and Engineering (Artificial Intelligence and Data Science)",
+  "Internet of Things",
+  "Metallurgical and Materials Engineering",
+  "Mechatronics Engineering",
+  "Robotics and Automation Engineering",
+  "Naval Arch. & Ship Building Engineering",
+];
 
 const CATEGORIES = ["SM", "EZ", "MU", "BH", "LA", "BX", "KU", "SC", "ST", "EW"] as const;
 
@@ -37,7 +84,7 @@ export default function CutoffPredictor() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Load distinct colleges + branches for filters
+  // Load distinct colleges + merge branches with the canonical KEAM list
   useEffect(() => {
     supabase
       .from("cutoffs")
@@ -46,7 +93,8 @@ export default function CutoffPredictor() {
       .then(({ data }) => {
         if (!data) return;
         setColleges(Array.from(new Set(data.map((d) => d.college_name))).sort());
-        setBranches(Array.from(new Set(data.map((d) => d.department_name))).sort());
+        const dbBranches = data.map((d) => d.department_name);
+        setBranches(Array.from(new Set([...KEAM_BRANCHES, ...dbBranches])).sort());
       });
   }, []);
 
@@ -141,36 +189,30 @@ export default function CutoffPredictor() {
 
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Filter by College
+                Search College
               </Label>
-              <Select value={collegeFilter} onValueChange={setCollegeFilter}>
-                <SelectTrigger className="h-12 text-base bg-background/70 border-2">
-                  <SelectValue placeholder="All colleges" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All colleges</SelectItem>
-                  {colleges.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                value={collegeFilter}
+                onChange={setCollegeFilter}
+                options={colleges}
+                allLabel="All colleges"
+                placeholder="Search college..."
+                emptyText="No college found."
+              />
             </div>
 
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Filter by Branch
+                Search Branch
               </Label>
-              <Select value={branchFilter} onValueChange={setBranchFilter}>
-                <SelectTrigger className="h-12 text-base bg-background/70 border-2">
-                  <SelectValue placeholder="All branches" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All branches</SelectItem>
-                  {branches.map((b) => (
-                    <SelectItem key={b} value={b}>{b}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                value={branchFilter}
+                onChange={setBranchFilter}
+                options={branches}
+                allLabel="All branches"
+                placeholder="Search branch..."
+                emptyText="No branch found."
+              />
             </div>
           </div>
 
@@ -285,5 +327,61 @@ export default function CutoffPredictor() {
         </p>
       </div>
     </section>
+  );
+}
+
+interface SearchableComboboxProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  allLabel: string;
+  placeholder: string;
+  emptyText: string;
+}
+
+function SearchableCombobox({ value, onChange, options, allLabel, placeholder, emptyText }: SearchableComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const display = value === "__all__" ? allLabel : value;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-12 w-full justify-between text-base bg-background/70 border-2 font-normal"
+        >
+          <span className={cn("truncate", value === "__all__" && "text-muted-foreground")}>{display}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={placeholder} className="h-10" />
+          <CommandList>
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value={allLabel}
+                onSelect={() => { onChange("__all__"); setOpen(false); }}
+              >
+                <Check className={cn("mr-2 h-4 w-4", value === "__all__" ? "opacity-100" : "opacity-0")} />
+                {allLabel}
+              </CommandItem>
+              {options.map((opt) => (
+                <CommandItem
+                  key={opt}
+                  value={opt}
+                  onSelect={() => { onChange(opt); setOpen(false); }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === opt ? "opacity-100" : "opacity-0")} />
+                  {opt}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
