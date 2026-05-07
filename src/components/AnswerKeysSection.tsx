@@ -27,7 +27,7 @@ export default function AnswerKeysSection() {
   }, []);
 
   return (
-    <section id="answer-keys" className="py-16 sm:py-24 bg-background">
+    <section id="answer-keys-section" className="py-16 sm:py-24 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="inline-block px-3 py-1 rounded-full bg-sunset-orange/10 text-sunset-orange text-xs font-bold tracking-wide uppercase mb-3">
