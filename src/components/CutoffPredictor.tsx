@@ -84,7 +84,7 @@ export default function CutoffPredictor() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Load distinct colleges + branches for filters
+  // Load distinct colleges + merge branches with the canonical KEAM list
   useEffect(() => {
     supabase
       .from("cutoffs")
@@ -93,7 +93,8 @@ export default function CutoffPredictor() {
       .then(({ data }) => {
         if (!data) return;
         setColleges(Array.from(new Set(data.map((d) => d.college_name))).sort());
-        setBranches(Array.from(new Set(data.map((d) => d.department_name))).sort());
+        const dbBranches = data.map((d) => d.department_name);
+        setBranches(Array.from(new Set([...KEAM_BRANCHES, ...dbBranches])).sort());
       });
   }, []);
 
