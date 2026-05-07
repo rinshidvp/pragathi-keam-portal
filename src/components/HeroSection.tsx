@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Users } from "lucide-react";
+import { FileDown, Users } from "lucide-react";
 
 export default function HeroSection() {
   return (
@@ -47,6 +47,9 @@ export default function HeroSection() {
           <p className="mt-6 sm:mt-8 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed font-medium">
             Run by Pragathi College Union. For the Students, By the Students.
           </p>
+          <p className="mt-2 text-sm text-muted-foreground/80 max-w-xl mx-auto">
+            Download phase-wise KEAM 2026 answer keys.
+          </p>
         </motion.div>
 
         <motion.div
@@ -56,11 +59,15 @@ export default function HeroSection() {
           className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <a
-            href="#resources"
+            href="#answer-keys-section"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("answer-keys-section")?.scrollIntoView({ behavior: "smooth" });
+            }}
             className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-sunset text-primary-foreground font-bold text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
           >
-            Access Mock Tests
-            <ArrowRight className="w-4 h-4" />
+            <FileDown className="w-4 h-4" />
+            View Official Answer Keys
           </a>
           <a
             href="#contacts"
