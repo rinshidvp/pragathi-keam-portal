@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronsUpDown, GraduationCap, Loader2, Search, Sparkles, Target, Trophy } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, GraduationCap, Loader2, Search, Sparkles, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,9 @@ const CATEGORIES = ["SM", "EZ", "MU", "BH", "LA", "BX", "KU", "SC", "ST", "EW"] 
 type Category = typeof CATEGORIES[number];
 
 const PHASE_OPTIONS = ["All Phases", "Phase 1", "Phase 2"] as const;
+const PAGE_SIZE = 50;
+const COOLDOWN_MS = 2000;
+const STALE_TIME = 30 * 60 * 1000; // 30 minutes
 
 interface CutoffResult {
   id: string;
@@ -29,6 +33,61 @@ interface CutoffResult {
   matched_rank: number;
 }
 
+interface SearchParams {
+  rank: number;
+  category: Category;
+  phaseFilter: string;
+  collegeFilter: string;
+  branchFilter: string;
+}
+
+async function fetchFilters() {
+  const { data } = await supabase
+    .from("cutoffs")
+    .select("college_name, department_name")
+    .limit(20000);
+  const collegeSet = new Map<string, string>();
+  const branchSet = new Map<string, string>();
+  for (const row of data ?? []) {
+    if (row.college_name) collegeSet.set(row.college_name.toLowerCase(), row.college_name);
+    if (row.department_name) branchSet.set(row.department_name.toLowerCase(), row.department_name);
+  }
+  return {
+    colleges: Array.from(collegeSet.values()).sort(),
+    branches: Array.from(branchSet.values()).sort(),
+  };
+}
+
+async function fetchPredictions(params: SearchParams, page: number): Promise<{ results: CutoffResult[]; total: number }> {
+  const { rank, category, phaseFilter, collegeFilter, branchFilter } = params;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  let query = supabase
+    .from("cutoffs")
+    .select(`id, college_name, department_name, phase, ${category}`, { count: "exact" })
+    .gte(category, rank)
+    .not(category, "is", null)
+    .order(category, { ascending: true })
+    .range(from, to);
+
+  if (phaseFilter !== "All Phases") query = query.eq("phase", phaseFilter);
+  if (collegeFilter !== "__all__") query = query.ilike("college_name", collegeFilter);
+  if (branchFilter !== "__all__") query = query.ilike("department_name", branchFilter);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+
+  const results: CutoffResult[] = (data ?? []).map((r: Record<string, unknown>) => ({
+    id: String(r.id),
+    college_name: String(r.college_name),
+    department_name: String(r.department_name),
+    phase: String(r.phase),
+    matched_rank: Number(r[category]),
+  }));
+  return { results, total: count ?? 0 };
+}
+
 export default function CutoffPredictor() {
   const [rank, setRank] = useState<string>("");
   const [category, setCategory] = useState<Category | "">("");
@@ -36,73 +95,55 @@ export default function CutoffPredictor() {
   const [collegeFilter, setCollegeFilter] = useState<string>("__all__");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
 
-  const [colleges, setColleges] = useState<string[]>([]);
-  const [branches, setBranches] = useState<string[]>([]);
+  const [search, setSearch] = useState<SearchParams | null>(null);
+  const [page, setPage] = useState(1);
+  const [cooldown, setCooldown] = useState(false);
+  const lastClickRef = useRef(0);
 
-  const [results, setResults] = useState<CutoffResult[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const filtersQuery = useQuery({
+    queryKey: ["cutoffs", "filters"],
+    queryFn: fetchFilters,
+    staleTime: STALE_TIME,
+  });
+  const colleges = filtersQuery.data?.colleges ?? [];
+  const branches = filtersQuery.data?.branches ?? [];
 
-  // Fetch DISTINCT colleges & branches directly from cutoffs table
-  useEffect(() => {
-    supabase
-      .from("cutoffs")
-      .select("college_name, department_name")
-      .limit(20000)
-      .then(({ data }) => {
-        if (!data) return;
-        const collegeSet = new Map<string, string>();
-        const branchSet = new Map<string, string>();
-        for (const row of data) {
-          if (row.college_name) collegeSet.set(row.college_name.toLowerCase(), row.college_name);
-          if (row.department_name) branchSet.set(row.department_name.toLowerCase(), row.department_name);
-        }
-        setColleges(Array.from(collegeSet.values()).sort());
-        setBranches(Array.from(branchSet.values()).sort());
-      });
-  }, []);
+  const predictionQuery = useQuery({
+    queryKey: ["cutoffs", "predict", search, page],
+    queryFn: () => fetchPredictions(search!, page),
+    enabled: !!search,
+    staleTime: STALE_TIME,
+    placeholderData: keepPreviousData,
+  });
 
   const canPredict = rank.trim() !== "" && category !== "" && Number(rank) > 0;
+  const loading = predictionQuery.isFetching;
 
-  const handlePredict = async () => {
+  const handlePredict = () => {
     if (!canPredict || !category) return;
-    setLoading(true);
-    setHasSearched(true);
-
-    let query = supabase
-      .from("cutoffs")
-      .select(`id, college_name, department_name, phase, ${category}`)
-      .gte(category, Number(rank))
-      .not(category, "is", null)
-      .order(category, { ascending: true })
-      .limit(500);
-
-    if (phaseFilter !== "All Phases") query = query.eq("phase", phaseFilter);
-    if (collegeFilter !== "__all__") query = query.ilike("college_name", collegeFilter);
-    if (branchFilter !== "__all__") query = query.ilike("department_name", branchFilter);
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("Predictor query error:", error);
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-
-    const mapped: CutoffResult[] = (data ?? []).map((r: Record<string, unknown>) => ({
-      id: String(r.id),
-      college_name: String(r.college_name),
-      department_name: String(r.department_name),
-      phase: String(r.phase),
-      matched_rank: Number(r[category]),
-    }));
-    setResults(mapped);
-    setLoading(false);
+    const now = Date.now();
+    if (now - lastClickRef.current < COOLDOWN_MS) return;
+    if (loading) return;
+    lastClickRef.current = now;
+    setCooldown(true);
+    setTimeout(() => setCooldown(false), COOLDOWN_MS);
+    setPage(1);
+    setSearch({
+      rank: Number(rank),
+      category,
+      phaseFilter,
+      collegeFilter,
+      branchFilter,
+    });
   };
 
+  const results = predictionQuery.data?.results ?? [];
+  const total = predictionQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const hasSearched = !!search;
   const isEmpty = useMemo(
-    () => hasSearched && !loading && (results?.length ?? 0) === 0,
-    [hasSearched, loading, results],
+    () => hasSearched && !loading && results.length === 0,
+    [hasSearched, loading, results.length],
   );
 
   return (
@@ -212,12 +253,14 @@ export default function CutoffPredictor() {
           <div className="mt-6 flex justify-center">
             <Button
               onClick={handlePredict}
-              disabled={!canPredict || loading}
+              disabled={!canPredict || loading || cooldown}
               size="lg"
               className="h-14 px-10 text-base font-bold rounded-xl bg-gradient-sunset hover:opacity-95 text-white shadow-lg shadow-sunset-orange/30 transition-all hover:scale-[1.02] disabled:opacity-50"
             >
               {loading ? (
                 <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Predicting...</>
+              ) : cooldown ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Please wait...</>
               ) : (
                 <><Sparkles className="mr-2 h-5 w-5" /> Predict My Chances</>
               )}
@@ -253,7 +296,7 @@ export default function CutoffPredictor() {
                 Try changing the Phase or removing the College/Branch filters to see all possibilities.
               </p>
             </motion.div>
-          ) : results && results.length > 0 ? (
+          ) : results.length > 0 && search ? (
             <motion.div
               key="results"
               initial={{ opacity: 0, y: 20 }}
@@ -261,11 +304,12 @@ export default function CutoffPredictor() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <div className="flex items-center justify-between mb-4 px-1">
+              <div className="flex items-center justify-between mb-4 px-1 flex-wrap gap-2">
                 <p className="text-sm text-muted-foreground font-medium">
-                  Showing <span className="font-bold text-foreground">{results.length}</span> eligible options for category{" "}
-                  <span className="font-bold text-sunset-orange">{category}</span>
-                  {phaseFilter !== "All Phases" && <> · <span className="font-bold text-foreground">{phaseFilter}</span></>}
+                  Showing <span className="font-bold text-foreground">{(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, total)}</span> of{" "}
+                  <span className="font-bold text-foreground">{total.toLocaleString()}</span> options for category{" "}
+                  <span className="font-bold text-sunset-orange">{search.category}</span>
+                  {search.phaseFilter !== "All Phases" && <> · <span className="font-bold text-foreground">{search.phaseFilter}</span></>}
                 </p>
               </div>
 
@@ -283,7 +327,7 @@ export default function CutoffPredictor() {
                         <Trophy className="w-3 h-3" /> {r.phase}
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-muted text-muted-foreground">
-                        {category}
+                        {search.category}
                       </span>
                     </div>
                     <h3 className="font-bold text-base text-foreground leading-snug mb-1 line-clamp-2">
@@ -301,12 +345,23 @@ export default function CutoffPredictor() {
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Your Rank</div>
-                        <div className="text-sm font-bold text-foreground tabular-nums">{Number(rank).toLocaleString()}</div>
+                        <div className="text-sm font-bold text-foreground tabular-nums">{search.rank.toLocaleString()}</div>
                       </div>
                     </div>
                   </motion.div>
                 ))}
               </div>
+
+              {totalPages > 1 && (
+                <PaginationBar
+                  page={page}
+                  totalPages={totalPages}
+                  onChange={(p) => {
+                    setPage(p);
+                    document.getElementById("cutoffs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                />
+              )}
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -316,6 +371,70 @@ export default function CutoffPredictor() {
         </p>
       </div>
     </section>
+  );
+}
+
+interface PaginationBarProps {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+}
+
+function PaginationBar({ page, totalPages, onChange }: PaginationBarProps) {
+  const pages = useMemo(() => {
+    const out: (number | "...")[] = [];
+    const window = 1;
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= page - window && i <= page + window)) {
+        out.push(i);
+      } else if (out[out.length - 1] !== "...") {
+        out.push("...");
+      }
+    }
+    return out;
+  }, [page, totalPages]);
+
+  return (
+    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p className="text-sm text-muted-foreground font-medium">
+        Page <span className="font-bold text-foreground">{page}</span> of <span className="font-bold text-foreground">{totalPages}</span>
+      </p>
+      <div className="flex items-center gap-1 flex-wrap justify-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onChange(Math.max(1, page - 1))}
+          disabled={page === 1}
+          className="h-9 gap-1"
+        >
+          <ChevronLeft className="w-4 h-4" /> Previous
+        </Button>
+        {pages.map((p, i) =>
+          p === "..." ? (
+            <span key={`e${i}`} className="px-2 text-muted-foreground">…</span>
+          ) : (
+            <Button
+              key={p}
+              variant={p === page ? "default" : "outline"}
+              size="sm"
+              onClick={() => onChange(p)}
+              className={cn("h-9 min-w-9", p === page && "bg-gradient-sunset text-white border-transparent")}
+            >
+              {p}
+            </Button>
+          ),
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onChange(Math.min(totalPages, page + 1))}
+          disabled={page === totalPages}
+          className="h-9 gap-1"
+        >
+          Next <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
   );
 }
 
