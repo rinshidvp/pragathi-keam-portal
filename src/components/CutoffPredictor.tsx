@@ -16,108 +16,87 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const KEAM_BRANCHES = [
-  "Electronics and communication",
-  "Electrical and electronics",
-  "Electrical and Computer engineering",
-  "Mechanical engineering",
-  "Computer Science & Engineering (Artificial Intelligence)",
-  "Civil and Environmental Engineering",
-  "Dairy Technology",
-  "Food Technology",
-  "Instrumentation & Control Engg.",
-  "Industrial Engineering",
-  "Information Technology",
-  "Production Engineering",
-  "Robotics and Artificial Intelligence",
-  "Artificial Intelligence and Data Science",
-  "Bio Technology and Biochemical Engineering",
-  "Computer Science and Engineering (Artificial Intelligence and Machine Learning)",
-  "Computer Science and Business Systems",
-  "Computer Science and Engineering (Cyber Security)",
-  "Electronics & Biomedical Engg",
-  "Electronics and Computer Science",
-  "Electronics Engineering (VLSI Design & Technology)",
-  "Mechanical (Automobile)",
-  "Polymer Engg.",
-  "Printing Technology",
-  "Artificial Intelligence",
-  "B.Tech Agricultural Engineering",
-  "Aeronautical Engineering",
-  "Automobile Engineering",
-  "Computer Science & Engineering and Business Systems",
-  "Bio Medical Engineering",
-  "Biomedical & Robotic Engineering",
-  "Bio Technology",
-  "Electronics & Instrumentation",
-  "Safety & Fire Engineering",
-  "Computer Science & Engineering (Internet of Things & Cyber Security including Block Chain)",
-  "Computer Science and Engineering (Artificial Intelligence and Data Science)",
-  "Internet of Things",
-  "Metallurgical and Materials Engineering",
-  "Mechatronics Engineering",
-  "Robotics and Automation Engineering",
-  "Naval Arch. & Ship Building Engineering",
-];
-
 const CATEGORIES = ["SM", "EZ", "MU", "BH", "LA", "BX", "KU", "SC", "ST", "EW"] as const;
+type Category = typeof CATEGORIES[number];
 
-interface CutoffRow {
+const PHASE_OPTIONS = ["All Phases", "Phase 1", "Phase 2"] as const;
+
+interface CutoffResult {
   id: string;
   college_name: string;
   department_name: string;
-  category: string;
-  cutoff_rank: number;
   phase: string;
+  matched_rank: number;
 }
 
 export default function CutoffPredictor() {
   const [rank, setRank] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
+  const [category, setCategory] = useState<Category | "">("");
+  const [phaseFilter, setPhaseFilter] = useState<string>("All Phases");
   const [collegeFilter, setCollegeFilter] = useState<string>("__all__");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
 
   const [colleges, setColleges] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
 
-  const [results, setResults] = useState<CutoffRow[] | null>(null);
+  const [results, setResults] = useState<CutoffResult[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Load distinct colleges + merge branches with the canonical KEAM list
+  // Fetch DISTINCT colleges & branches directly from cutoffs table
   useEffect(() => {
     supabase
       .from("cutoffs")
       .select("college_name, department_name")
-      .limit(10000)
+      .limit(20000)
       .then(({ data }) => {
         if (!data) return;
-        setColleges(Array.from(new Set(data.map((d) => d.college_name))).sort());
-        const dbBranches = data.map((d) => d.department_name);
-        setBranches(Array.from(new Set([...KEAM_BRANCHES, ...dbBranches])).sort());
+        const collegeSet = new Map<string, string>();
+        const branchSet = new Map<string, string>();
+        for (const row of data) {
+          if (row.college_name) collegeSet.set(row.college_name.toLowerCase(), row.college_name);
+          if (row.department_name) branchSet.set(row.department_name.toLowerCase(), row.department_name);
+        }
+        setColleges(Array.from(collegeSet.values()).sort());
+        setBranches(Array.from(branchSet.values()).sort());
       });
   }, []);
 
   const canPredict = rank.trim() !== "" && category !== "" && Number(rank) > 0;
 
   const handlePredict = async () => {
-    if (!canPredict) return;
+    if (!canPredict || !category) return;
     setLoading(true);
     setHasSearched(true);
 
     let query = supabase
       .from("cutoffs")
-      .select("*")
-      .eq("category", category)
-      .gte("cutoff_rank", Number(rank))
-      .order("cutoff_rank", { ascending: true })
+      .select(`id, college_name, department_name, phase, ${category}`)
+      .gte(category, Number(rank))
+      .not(category, "is", null)
+      .order(category, { ascending: true })
       .limit(500);
 
-    if (collegeFilter !== "__all__") query = query.eq("college_name", collegeFilter);
-    if (branchFilter !== "__all__") query = query.eq("department_name", branchFilter);
+    if (phaseFilter !== "All Phases") query = query.eq("phase", phaseFilter);
+    if (collegeFilter !== "__all__") query = query.ilike("college_name", collegeFilter);
+    if (branchFilter !== "__all__") query = query.ilike("department_name", branchFilter);
 
-    const { data } = await query;
-    setResults((data as CutoffRow[]) ?? []);
+    const { data, error } = await query;
+    if (error) {
+      console.error("Predictor query error:", error);
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+
+    const mapped: CutoffResult[] = (data ?? []).map((r: Record<string, unknown>) => ({
+      id: String(r.id),
+      college_name: String(r.college_name),
+      department_name: String(r.department_name),
+      phase: String(r.phase),
+      matched_rank: Number(r[category]),
+    }));
+    setResults(mapped);
     setLoading(false);
   };
 
@@ -128,7 +107,6 @@ export default function CutoffPredictor() {
 
   return (
     <section id="cutoffs" className="py-16 sm:py-24 bg-gradient-to-b from-cream to-background relative overflow-hidden">
-      {/* decorative blobs */}
       <div className="absolute -top-24 -right-24 w-96 h-96 bg-sunset-orange/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-sunset-yellow/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -145,7 +123,6 @@ export default function CutoffPredictor() {
           </p>
         </div>
 
-        {/* Glassmorphism predictor card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -156,7 +133,7 @@ export default function CutoffPredictor() {
               "linear-gradient(135deg, color-mix(in oklab, var(--card) 80%, transparent) 0%, color-mix(in oklab, var(--card) 60%, transparent) 100%)",
           }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                 <Target className="w-3 h-3 text-sunset-orange" /> Your KEAM Rank *
@@ -175,13 +152,29 @@ export default function CutoffPredictor() {
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Category *
               </Label>
-              <Select value={category} onValueChange={setCategory}>
+              <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
                 <SelectTrigger className="h-12 text-base bg-background/70 border-2">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Select Phase *
+              </Label>
+              <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+                <SelectTrigger className="h-12 text-base bg-background/70 border-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PHASE_OPTIONS.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -224,19 +217,14 @@ export default function CutoffPredictor() {
               className="h-14 px-10 text-base font-bold rounded-xl bg-gradient-sunset hover:opacity-95 text-white shadow-lg shadow-sunset-orange/30 transition-all hover:scale-[1.02] disabled:opacity-50"
             >
               {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Predicting...
-                </>
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Predicting...</>
               ) : (
-                <>
-                  <Sparkles className="mr-2 h-5 w-5" /> Predict My Chances
-                </>
+                <><Sparkles className="mr-2 h-5 w-5" /> Predict My Chances</>
               )}
             </Button>
           </div>
         </motion.div>
 
-        {/* Results */}
         <AnimatePresence mode="wait">
           {!hasSearched ? (
             <motion.div
@@ -262,7 +250,7 @@ export default function CutoffPredictor() {
               <Search className="w-12 h-12 mx-auto text-sunset-orange/60 mb-4" />
               <p className="text-foreground font-semibold mb-1">No matches found for this specific filter.</p>
               <p className="text-sm text-muted-foreground">
-                Try removing the College/Branch filters to see all possibilities.
+                Try changing the Phase or removing the College/Branch filters to see all possibilities.
               </p>
             </motion.div>
           ) : results && results.length > 0 ? (
@@ -277,6 +265,7 @@ export default function CutoffPredictor() {
                 <p className="text-sm text-muted-foreground font-medium">
                   Showing <span className="font-bold text-foreground">{results.length}</span> eligible options for category{" "}
                   <span className="font-bold text-sunset-orange">{category}</span>
+                  {phaseFilter !== "All Phases" && <> · <span className="font-bold text-foreground">{phaseFilter}</span></>}
                 </p>
               </div>
 
@@ -294,7 +283,7 @@ export default function CutoffPredictor() {
                         <Trophy className="w-3 h-3" /> {r.phase}
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-muted text-muted-foreground">
-                        {r.category}
+                        {category}
                       </span>
                     </div>
                     <h3 className="font-bold text-base text-foreground leading-snug mb-1 line-clamp-2">
@@ -304,10 +293,10 @@ export default function CutoffPredictor() {
                       {r.department_name}
                     </p>
                     <div className="flex items-end justify-between pt-3 border-t border-border">
-                      <div>
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Cutoff Rank</div>
+                      <div className="rounded-lg px-2 py-1 bg-sunset-orange/10 ring-1 ring-sunset-orange/30">
+                        <div className="text-[10px] uppercase tracking-wider text-sunset-orange font-bold">Matched Cutoff</div>
                         <div className="text-2xl font-extrabold text-gradient-sunset tabular-nums">
-                          {r.cutoff_rank.toLocaleString()}
+                          {r.matched_rank.toLocaleString()}
                         </div>
                       </div>
                       <div className="text-right">
@@ -361,19 +350,12 @@ function SearchableCombobox({ value, onChange, options, allLabel, placeholder, e
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
-              <CommandItem
-                value={allLabel}
-                onSelect={() => { onChange("__all__"); setOpen(false); }}
-              >
+              <CommandItem value={allLabel} onSelect={() => { onChange("__all__"); setOpen(false); }}>
                 <Check className={cn("mr-2 h-4 w-4", value === "__all__" ? "opacity-100" : "opacity-0")} />
                 {allLabel}
               </CommandItem>
               {options.map((opt) => (
-                <CommandItem
-                  key={opt}
-                  value={opt}
-                  onSelect={() => { onChange(opt); setOpen(false); }}
-                >
+                <CommandItem key={opt} value={opt} onSelect={() => { onChange(opt); setOpen(false); }}>
                   <Check className={cn("mr-2 h-4 w-4", value === opt ? "opacity-100" : "opacity-0")} />
                   {opt}
                 </CommandItem>
