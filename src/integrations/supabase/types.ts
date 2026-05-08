@@ -184,31 +184,55 @@ export type Database = {
       }
       cutoffs: {
         Row: {
-          category: string
+          BH: number | null
+          BX: number | null
           college_name: string
           created_at: string
-          cutoff_rank: number
           department_name: string
+          EW: number | null
+          EZ: number | null
           id: string
+          KU: number | null
+          LA: number | null
+          MU: number | null
           phase: string
+          SC: number | null
+          SM: number | null
+          ST: number | null
         }
         Insert: {
-          category: string
+          BH?: number | null
+          BX?: number | null
           college_name: string
           created_at?: string
-          cutoff_rank: number
           department_name: string
+          EW?: number | null
+          EZ?: number | null
           id?: string
+          KU?: number | null
+          LA?: number | null
+          MU?: number | null
           phase: string
+          SC?: number | null
+          SM?: number | null
+          ST?: number | null
         }
         Update: {
-          category?: string
+          BH?: number | null
+          BX?: number | null
           college_name?: string
           created_at?: string
-          cutoff_rank?: number
           department_name?: string
+          EW?: number | null
+          EZ?: number | null
           id?: string
+          KU?: number | null
+          LA?: number | null
+          MU?: number | null
           phase?: string
+          SC?: number | null
+          SM?: number | null
+          ST?: number | null
         }
         Relationships: []
       }
