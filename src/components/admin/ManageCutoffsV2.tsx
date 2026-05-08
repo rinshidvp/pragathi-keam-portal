@@ -32,16 +32,39 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const PHASES = ["Phase 1", "Phase 2", "Phase 3"] as const;
-const CATEGORY_KEYS = ["SM", "EZ", "MU", "BH", "LA", "BX", "KU", "SC", "ST", "EW"];
+const PHASES = ["Phase 1", "Phase 2"] as const;
+const CATEGORY_KEYS = ["SM", "EZ", "MU", "BH", "LA", "BX", "KU", "SC", "ST", "EW"] as const;
+type CategoryKey = typeof CATEGORY_KEYS[number];
 
 interface CutoffRow {
   id: string;
   college_name: string;
   department_name: string;
-  category: string;
-  cutoff_rank: number;
   phase: string;
+  SM: number | null;
+  EZ: number | null;
+  MU: number | null;
+  BH: number | null;
+  LA: number | null;
+  BX: number | null;
+  KU: number | null;
+  SC: number | null;
+  ST: number | null;
+  EW: number | null;
+}
+
+type InsertRow = {
+  college_name: string;
+  department_name: string;
+  phase: string;
+} & Partial<Record<CategoryKey, number | null>>;
+
+function parseRank(raw: unknown): number | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (!s || s === "-" || s.toLowerCase() === "na" || s.toLowerCase() === "n/a") return null;
+  const n = parseInt(s.replace(/,/g, ""), 10);
+  return Number.isNaN(n) ? null : n;
 }
 
 export default function ManageCutoffsV2() {
@@ -82,10 +105,9 @@ export default function ManageCutoffsV2() {
       transformHeader: (h) => h.trim(),
       complete: async (parsed) => {
         try {
-          const rows: { college_name: string; department_name: string; category: string; cutoff_rank: number; phase: string }[] = [];
+          const rows: InsertRow[] = [];
 
           for (const r of parsed.data) {
-            // Find college / department keys flexibly
             const collegeKey = Object.keys(r).find((k) => /^college$|^college[_ ]?name$/i.test(k));
             const deptKey = Object.keys(r).find((k) => /^department$|^branch$|^dept$|^department[_ ]?name$/i.test(k));
 
@@ -93,30 +115,26 @@ export default function ManageCutoffsV2() {
             const dept = deptKey ? r[deptKey]?.trim() : "";
             if (!college || !dept) continue;
 
+            const row: InsertRow = {
+              college_name: college,
+              department_name: dept,
+              phase,
+            };
+
             for (const cat of CATEGORY_KEYS) {
               const matchKey = Object.keys(r).find((k) => k.toUpperCase() === cat);
-              if (!matchKey) continue;
-              const raw = r[matchKey]?.toString().trim();
-              if (!raw || raw === "-" || raw.toLowerCase() === "na") continue;
-              const num = parseInt(raw.replace(/,/g, ""), 10);
-              if (Number.isNaN(num)) continue;
-              rows.push({
-                college_name: college,
-                department_name: dept,
-                category: cat,
-                cutoff_rank: num,
-                phase,
-              });
+              row[cat] = matchKey ? parseRank(r[matchKey]) : null;
             }
+
+            rows.push(row);
           }
 
           if (rows.length === 0) {
-            toast.error("No valid rows found. Check CSV columns: College, Department, SM, EZ, MU, ...");
+            toast.error("No valid rows found. Required columns: College, Department, plus any of SM, EZ, MU, BH, LA, BX, KU, SC, ST, EW.");
             setUploading(false);
             return;
           }
 
-          // Batch insert in chunks of 500
           const chunkSize = 500;
           let inserted = 0;
           for (let i = 0; i < rows.length; i += chunkSize) {
@@ -165,7 +183,7 @@ export default function ManageCutoffsV2() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl">
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gradient-sunset">Manage Cutoffs</h1>
         <p className="text-sm text-muted-foreground">
@@ -174,7 +192,6 @@ export default function ManageCutoffsV2() {
         </p>
       </div>
 
-      {/* Bulk upload card */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -187,7 +204,7 @@ export default function ManageCutoffsV2() {
           <div>
             <h2 className="font-bold text-lg">Bulk CSV Upload</h2>
             <p className="text-xs text-muted-foreground">
-              Expected columns: College, Department, SM, EZ, MU, BH, LA, BX, KU, SC, ST, EW
+              Expected columns: College, Department, SM, EZ, MU, BH, LA, BX, KU, SC, ST, EW. Empty / "-" cells become NULL.
             </p>
           </div>
         </div>
@@ -270,33 +287,36 @@ export default function ManageCutoffsV2() {
         </div>
       </motion.div>
 
-      {/* Recent rows */}
       <div>
         <h3 className="font-bold text-base mb-3">Recent Entries (latest 20)</h3>
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left px-3 py-2 font-bold">College</th>
                 <th className="text-left px-3 py-2 font-bold">Branch</th>
-                <th className="text-center px-3 py-2 font-bold">Cat</th>
-                <th className="text-right px-3 py-2 font-bold">Rank</th>
                 <th className="text-center px-3 py-2 font-bold">Phase</th>
+                {CATEGORY_KEYS.map((c) => (
+                  <th key={c} className="text-right px-2 py-2 font-bold">{c}</th>
+                ))}
                 <th className="px-3 py-2"></th>
               </tr>
             </thead>
             <tbody>
               {recent.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">No data yet — upload a CSV to begin.</td></tr>
+                <tr><td colSpan={4 + CATEGORY_KEYS.length} className="text-center py-8 text-muted-foreground">No data yet — upload a CSV to begin.</td></tr>
               ) : recent.map((r) => (
                 <tr key={r.id} className="border-t border-border hover:bg-muted/30">
-                  <td className="px-3 py-2 font-medium truncate max-w-[200px]">{r.college_name}</td>
-                  <td className="px-3 py-2 text-muted-foreground truncate max-w-[200px]">{r.department_name}</td>
-                  <td className="px-3 py-2 text-center font-mono">{r.category}</td>
-                  <td className="px-3 py-2 text-right tabular-nums font-semibold">{r.cutoff_rank.toLocaleString()}</td>
+                  <td className="px-3 py-2 font-medium truncate max-w-[180px]">{r.college_name}</td>
+                  <td className="px-3 py-2 text-muted-foreground truncate max-w-[180px]">{r.department_name}</td>
                   <td className="px-3 py-2 text-center">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-sunset-orange/10 text-sunset-orange font-semibold">{r.phase}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sunset-orange/10 text-sunset-orange font-semibold">{r.phase}</span>
                   </td>
+                  {CATEGORY_KEYS.map((c) => (
+                    <td key={c} className="px-2 py-2 text-right tabular-nums">
+                      {r[c] !== null && r[c] !== undefined ? r[c]!.toLocaleString() : <span className="text-muted-foreground/40">—</span>}
+                    </td>
+                  ))}
                   <td className="px-3 py-2 text-right">
                     <Button size="icon" variant="ghost" onClick={() => handleDeleteRow(r.id)} className="h-7 w-7 text-destructive hover:bg-destructive/10">
                       <Trash2 className="w-3.5 h-3.5" />
