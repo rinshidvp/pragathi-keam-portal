@@ -29,6 +29,7 @@ function Index() {
       <EventsSection />
       <CutoffPredictor />
       <AnswerKeysSection />
+      <DeptHelpDeskSection />
       <ContactsSection />
       <Footer />
       <CosmIQBadge />
