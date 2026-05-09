@@ -69,6 +69,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         {active === "answer_keys" && <ManageAnswerKeys />}
         {active === "resources" && <ManageResources />}
         {active === "contacts" && <ManageContacts />}
+        {active === "dept_helpdesk" && <ManageDeptHelpDesk />}
         {active === "socials" && <ManageSocials />}
       </main>
     </div>
