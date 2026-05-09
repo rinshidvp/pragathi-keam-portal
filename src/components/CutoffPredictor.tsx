@@ -134,6 +134,8 @@ export default function CutoffPredictor() {
       }
     }
   };
+
+  const predictionQuery = useQuery({
     queryKey: ["cutoffs", "predict", search, page],
     queryFn: () => fetchPredictions(search!, page),
     enabled: !!search,
