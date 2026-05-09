@@ -48,13 +48,21 @@ async function fetchFilters() {
     .limit(20000);
   const collegeSet = new Map<string, string>();
   const branchSet = new Map<string, string>();
+  // Map of lowercased college name -> Map of lowercased branch -> display branch
+  const collegeToBranches = new Map<string, Map<string, string>>();
   for (const row of data ?? []) {
     if (row.college_name) collegeSet.set(row.college_name.toLowerCase(), row.college_name);
     if (row.department_name) branchSet.set(row.department_name.toLowerCase(), row.department_name);
+    if (row.college_name && row.department_name) {
+      const key = row.college_name.toLowerCase();
+      if (!collegeToBranches.has(key)) collegeToBranches.set(key, new Map());
+      collegeToBranches.get(key)!.set(row.department_name.toLowerCase(), row.department_name);
+    }
   }
   return {
     colleges: Array.from(collegeSet.values()).sort(),
     branches: Array.from(branchSet.values()).sort(),
+    collegeToBranches,
   };
 }
 
