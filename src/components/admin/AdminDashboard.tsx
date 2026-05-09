@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Users, BookOpen, Link2, TrendingUp, LogOut, FileCheck } from "lucide-react";
+import { Bell, Users, BookOpen, Link2, TrendingUp, LogOut, FileCheck, Headphones } from "lucide-react";
 import ManageEvents from "./ManageEvents";
 import ManageContacts from "./ManageContacts";
 import ManageResources from "./ManageResources";
 import ManageSocials from "./ManageSocials";
 import ManageCutoffsV2 from "./ManageCutoffsV2";
 import ManageAnswerKeys from "./ManageAnswerKeys";
+import ManageDeptHelpDesk from "./ManageDeptHelpDesk";
 
 const tabs = [
   { key: "events", label: "KEAM Alerts", icon: Bell },
@@ -14,6 +15,7 @@ const tabs = [
   { key: "answer_keys", label: "Answer Keys", icon: FileCheck },
   { key: "resources", label: "KEAM Resources", icon: BookOpen },
   { key: "contacts", label: "Contacts", icon: Users },
+  { key: "dept_helpdesk", label: "Dept Help Desk", icon: Headphones },
   { key: "socials", label: "Socials", icon: Link2 },
 ] as const;
 
