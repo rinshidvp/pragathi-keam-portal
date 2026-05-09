@@ -114,9 +114,26 @@ export default function CutoffPredictor() {
     staleTime: STALE_TIME,
   });
   const colleges = filtersQuery.data?.colleges ?? [];
-  const branches = filtersQuery.data?.branches ?? [];
+  const allBranches = filtersQuery.data?.branches ?? [];
+  const collegeToBranches = filtersQuery.data?.collegeToBranches;
 
-  const predictionQuery = useQuery({
+  // Cascading: if a specific college is selected, only show branches offered there
+  const branches = useMemo(() => {
+    if (collegeFilter === "__all__" || !collegeToBranches) return allBranches;
+    const map = collegeToBranches.get(collegeFilter.toLowerCase());
+    return map ? Array.from(map.values()).sort() : allBranches;
+  }, [collegeFilter, collegeToBranches, allBranches]);
+
+  const handleCollegeChange = (next: string) => {
+    setCollegeFilter(next);
+    // If the currently selected branch is not offered by the new college, reset it
+    if (next !== "__all__" && branchFilter !== "__all__" && collegeToBranches) {
+      const map = collegeToBranches.get(next.toLowerCase());
+      if (!map || !map.has(branchFilter.toLowerCase())) {
+        setBranchFilter("__all__");
+      }
+    }
+  };
     queryKey: ["cutoffs", "predict", search, page],
     queryFn: () => fetchPredictions(search!, page),
     enabled: !!search,
