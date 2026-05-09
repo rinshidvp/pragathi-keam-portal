@@ -5,6 +5,7 @@ import AnswerKeysSection from "@/components/AnswerKeysSection";
 import EventsSection from "@/components/EventsSection";
 import CutoffPredictor from "@/components/CutoffPredictor";
 import ContactsSection from "@/components/ContactsSection";
+import DeptHelpDeskSection from "@/components/DeptHelpDeskSection";
 import Footer from "@/components/Footer";
 import CosmIQBadge from "@/components/CosmIQBadge";
 
@@ -28,6 +29,7 @@ function Index() {
       <EventsSection />
       <CutoffPredictor />
       <AnswerKeysSection />
+      <DeptHelpDeskSection />
       <ContactsSection />
       <Footer />
       <CosmIQBadge />

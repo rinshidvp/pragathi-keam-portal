@@ -236,6 +236,30 @@ export type Database = {
         }
         Relationships: []
       }
+      department_contacts: {
+        Row: {
+          created_at: string
+          department: string
+          id: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          department: string
+          id?: string
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          id?: string
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string
