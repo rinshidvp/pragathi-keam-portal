@@ -111,8 +111,10 @@ export default function ManageCutoffsV2() {
             const collegeKey = Object.keys(r).find((k) => /^college$|^college[_ ]?name$/i.test(k));
             const deptKey = Object.keys(r).find((k) => /^department$|^branch$|^dept$|^department[_ ]?name$/i.test(k));
 
-            const college = collegeKey ? r[collegeKey]?.trim() : "";
-            const dept = deptKey ? r[deptKey]?.trim() : "";
+            const cleanText = (v: string | undefined) =>
+              (v ?? "").replace(/\s+/g, " ").trim().replace(/[.\s]+$/, "").trim();
+            const college = cleanText(collegeKey ? r[collegeKey] : "");
+            const dept = cleanText(deptKey ? r[deptKey] : "");
             if (!college || !dept) continue;
 
             const row: InsertRow = {
