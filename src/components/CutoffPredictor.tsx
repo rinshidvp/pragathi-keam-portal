@@ -254,7 +254,7 @@ export default function CutoffPredictor() {
               </Label>
               <SearchableCombobox
                 value={collegeFilter}
-                onChange={setCollegeFilter}
+                onChange={handleCollegeChange}
                 options={colleges}
                 allLabel="All colleges"
                 placeholder="Search college..."
