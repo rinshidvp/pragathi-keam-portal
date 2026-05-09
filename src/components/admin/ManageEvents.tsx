@@ -101,8 +101,28 @@ export default function ManageEvents() {
           <textarea placeholder="Description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" rows={2} />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input type="datetime-local" value={form.event_date} onChange={e => setForm(p => ({ ...p, event_date: e.target.value }))} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-            <input placeholder="Image URL" value={form.image_url} onChange={e => setForm(p => ({ ...p, image_url: e.target.value }))} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+            <input placeholder="Image URL (or upload)" value={form.image_url} onChange={e => setForm(p => ({ ...p, image_url: e.target.value }))} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" />
             <input placeholder="Registration Link" value={form.registration_link} onChange={e => setForm(p => ({ ...p, registration_link: e.target.value }))} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium cursor-pointer hover:bg-accent">
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploading ? "Uploading..." : "Upload Image"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploading}
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImageUpload(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {form.image_url && (
+              <img src={form.image_url} alt="preview" className="h-12 w-12 object-cover rounded-md border border-border" onError={e => (e.currentTarget.style.display = "none")} />
+            )}
           </div>
           <div className="flex gap-2">
             <button onClick={() => editing ? handleUpdate(editing) : handleAdd()} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-sunset text-primary-foreground text-sm font-semibold">
