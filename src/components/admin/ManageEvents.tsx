@@ -11,6 +11,26 @@ export default function ManageEvents() {
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", description: "", event_date: "", image_url: "", registration_link: "" });
   const [adding, setAdding] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("event-images").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("event-images").getPublicUrl(path);
+      setForm(p => ({ ...p, image_url: data.publicUrl }));
+    } catch (err) {
+      alert("Upload failed: " + (err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const fetchItems = async () => {
     const { data } = await supabase.from("events").select("*").order("event_date", { ascending: true });
