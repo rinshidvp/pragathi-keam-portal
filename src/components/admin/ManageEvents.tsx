@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plus, Pencil, Trash2, Save, X, Upload, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 type Event = Tables<"events">;
 
@@ -16,6 +17,9 @@ export default function ManageEvents() {
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("You must be logged in as admin to upload images.");
+
       const ext = file.name.split(".").pop();
       const path = `${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage.from("event-images").upload(path, file, {
@@ -25,17 +29,26 @@ export default function ManageEvents() {
       if (error) throw error;
       const { data } = supabase.storage.from("event-images").getPublicUrl(path);
       setForm(p => ({ ...p, image_url: data.publicUrl }));
+      toast.success("Image uploaded successfully");
     } catch (err) {
-      alert("Upload failed: " + (err as Error).message);
+      const msg = (err as Error).message || "Upload failed";
+      console.error("Image upload error:", err);
+      toast.error(`Upload failed: ${msg}`);
     } finally {
       setUploading(false);
     }
   };
 
   const fetchItems = async () => {
-    const { data } = await supabase.from("events").select("*").order("event_date", { ascending: true });
-    setItems(data ?? []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.from("events").select("*").order("event_date", { ascending: true });
+      if (error) throw error;
+      setItems(data ?? []);
+    } catch (err) {
+      toast.error(`Failed to load alerts: ${(err as Error).message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchItems(); }, []);
@@ -43,36 +56,60 @@ export default function ManageEvents() {
   const resetForm = () => setForm({ title: "", description: "", event_date: "", image_url: "", registration_link: "" });
 
   const handleAdd = async () => {
-    if (!form.title) return;
-    await supabase.from("events").insert({
-      title: form.title,
-      description: form.description || null,
-      event_date: form.event_date || null,
-      image_url: form.image_url || null,
-      registration_link: form.registration_link || null,
-    });
-    resetForm();
-    setAdding(false);
-    fetchItems();
+    if (!form.title) {
+      toast.error("Title is required");
+      return;
+    }
+    try {
+      const { error } = await supabase.from("events").insert({
+        title: form.title,
+        description: form.description || null,
+        event_date: form.event_date || null,
+        image_url: form.image_url || null,
+        registration_link: form.registration_link || null,
+      });
+      if (error) throw error;
+      toast.success("Alert created");
+      resetForm();
+      setAdding(false);
+      fetchItems();
+    } catch (err) {
+      console.error("Insert error:", err);
+      toast.error(`Failed to create alert: ${(err as Error).message}`);
+    }
   };
 
   const handleUpdate = async (id: string) => {
-    await supabase.from("events").update({
-      title: form.title,
-      description: form.description || null,
-      event_date: form.event_date || null,
-      image_url: form.image_url || null,
-      registration_link: form.registration_link || null,
-    }).eq("id", id);
-    setEditing(null);
-    resetForm();
-    fetchItems();
+    try {
+      const { error } = await supabase.from("events").update({
+        title: form.title,
+        description: form.description || null,
+        event_date: form.event_date || null,
+        image_url: form.image_url || null,
+        registration_link: form.registration_link || null,
+      }).eq("id", id);
+      if (error) throw error;
+      toast.success("Alert updated");
+      setEditing(null);
+      resetForm();
+      fetchItems();
+    } catch (err) {
+      console.error("Update error:", err);
+      toast.error(`Failed to update alert: ${(err as Error).message}`);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this event?")) return;
-    await supabase.from("events").delete().eq("id", id);
-    fetchItems();
+    try {
+      const { error } = await supabase.from("events").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Alert deleted");
+      fetchItems();
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error(`Failed to delete: ${(err as Error).message}`);
+    }
   };
 
   const startEdit = (item: Event) => {
