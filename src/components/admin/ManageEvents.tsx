@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plus, Pencil, Trash2, Save, X, Upload, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 type Event = Tables<"events">;
 
